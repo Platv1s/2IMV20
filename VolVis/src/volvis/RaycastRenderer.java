@@ -12,6 +12,7 @@ import gui.RaycastRendererPanel;
 import gui.TransferFunction2DEditor;
 import gui.TransferFunctionEditor;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import util.TFChangeListener;
 import util.VectorMath;
 import volume.GradientVolume;
@@ -94,7 +95,43 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return volume.getVoxel(x, y, z);
     }
 
-
+    double triLinearInterpolation(double[] coord) {         
+        double x = coord[0];
+        double y = coord[1];
+        double z = coord[2];
+        
+        if (x < 0 || x > volume.getDimX() - 1 || y < 0 || y > volume.getDimY() - 1
+                || z < 0 || z > volume.getDimZ() - 1) {
+            return 0;
+        }
+        
+        double xd = (x - Math.floor(x)) / Math.ceil(x) - Math.floor(x);
+        double yd = (y - Math.floor(y)) / Math.ceil(y) - Math.floor(y);
+        double zd = (z - Math.floor(z)) / Math.ceil(z) - Math.floor(z);
+        
+        int c000 = volume.getVoxel((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z));
+        int c100 = volume.getVoxel((int) Math.ceil(x), (int) Math.floor(y), (int) Math.floor(z));
+        
+        int c001 = volume.getVoxel((int) Math.floor(x), (int) Math.floor(y), (int) Math.ceil(z));
+        int c101 = volume.getVoxel((int) Math.ceil(x), (int) Math.floor(y), (int) Math.ceil(z));
+        
+        int c010 = volume.getVoxel((int) Math.floor(x), (int) Math.ceil(y), (int) Math.floor(z));
+        int c110 = volume.getVoxel((int) Math.ceil(x), (int) Math.ceil(y), (int) Math.floor(z));
+        
+        int c011 = volume.getVoxel((int) Math.floor(x), (int) Math.ceil(y), (int) Math.ceil(z));
+        int c111 = volume.getVoxel((int) Math.ceil(x), (int) Math.ceil(y), (int) Math.ceil(z));
+        
+        double c00 = (c000 * (1 - xd)) + (c100 * xd);
+        double c01 = (c001 * (1 - xd)) + (c101 * xd);
+        double c10 = (c010 * (1 - xd)) + (c110 * xd);
+        double c11 = (c011 * (1 - xd)) + (c111 * xd);
+        
+        double c0 = (c00 * (1 - yd)) + (c10 * yd);
+        double c1 = (c01 * (1 - yd)) + (c11 * yd);
+        
+        return (c0 * (1 - zd)) + (c1 * zd);
+    }
+    
     void slicer(double[] viewMatrix) {
 
         // clear image
@@ -134,7 +171,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
                         + volumeCenter[2];
 
-                int val = getVoxel(pixelCoord);
+                //int val = getVoxel(pixelCoord);
+                double val = triLinearInterpolation(pixelCoord);
                 
                 // Map the intensity to a grey value by linear scaling
                 voxelColor.r = val/max;
@@ -157,6 +195,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     }
 
+    
 
     private void drawBoundingBox(GL2 gl) {
         gl.glPushAttrib(GL2.GL_CURRENT_BIT);
