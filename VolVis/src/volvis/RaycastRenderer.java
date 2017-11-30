@@ -105,21 +105,21 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             return 0;
         }
         
-        double xd = (x - Math.floor(x)) / Math.ceil(x) - Math.floor(x);
-        double yd = (y - Math.floor(y)) / Math.ceil(y) - Math.floor(y);
-        double zd = (z - Math.floor(z)) / Math.ceil(z) - Math.floor(z);
+        double xd = (x - Math.floor(x)) / (Math.ceil(x) - Math.floor(x));
+        double yd = (y - Math.floor(y)) / (Math.ceil(y) - Math.floor(y));
+        double zd = (z - Math.floor(z)) / (Math.ceil(z) - Math.floor(z));
         
-        int c000 = volume.getVoxel((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z));
-        int c100 = volume.getVoxel((int) Math.ceil(x), (int) Math.floor(y), (int) Math.floor(z));
+        double c000 = volume.getVoxel((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z));
+        double c100 = volume.getVoxel((int) Math.ceil(x), (int) Math.floor(y), (int) Math.floor(z));
         
-        int c001 = volume.getVoxel((int) Math.floor(x), (int) Math.floor(y), (int) Math.ceil(z));
-        int c101 = volume.getVoxel((int) Math.ceil(x), (int) Math.floor(y), (int) Math.ceil(z));
+        double c001 = volume.getVoxel((int) Math.floor(x), (int) Math.floor(y), (int) Math.ceil(z));
+        double c101 = volume.getVoxel((int) Math.ceil(x), (int) Math.floor(y), (int) Math.ceil(z));
         
-        int c010 = volume.getVoxel((int) Math.floor(x), (int) Math.ceil(y), (int) Math.floor(z));
-        int c110 = volume.getVoxel((int) Math.ceil(x), (int) Math.ceil(y), (int) Math.floor(z));
+        double c010 = volume.getVoxel((int) Math.floor(x), (int) Math.ceil(y), (int) Math.floor(z));
+        double c110 = volume.getVoxel((int) Math.ceil(x), (int) Math.ceil(y), (int) Math.floor(z));
         
-        int c011 = volume.getVoxel((int) Math.floor(x), (int) Math.ceil(y), (int) Math.ceil(z));
-        int c111 = volume.getVoxel((int) Math.ceil(x), (int) Math.ceil(y), (int) Math.ceil(z));
+        double c011 = volume.getVoxel((int) Math.floor(x), (int) Math.ceil(y), (int) Math.ceil(z));
+        double c111 = volume.getVoxel((int) Math.ceil(x), (int) Math.ceil(y), (int) Math.ceil(z));
         
         double c00 = (c000 * (1 - xd)) + (c100 * xd);
         double c01 = (c001 * (1 - xd)) + (c101 * xd);
@@ -171,7 +171,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
                         + volumeCenter[2];
 
-                //int val = getVoxel(pixelCoord);
+                // int val = getVoxel(pixelCoord);
                 double val = triLinearInterpolation(pixelCoord);
                 
                 // Map the intensity to a grey value by linear scaling
