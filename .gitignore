@@ -22,7 +22,7 @@
 hs_err_pid*
 
 #Netbeans files:
-nbproject/private/
+nbproject/
 build/
 nbbuild/
 dist/
