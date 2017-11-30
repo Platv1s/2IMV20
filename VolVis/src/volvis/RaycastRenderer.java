@@ -24,16 +24,26 @@ import volume.Volume;
  */
 public class RaycastRenderer extends Renderer implements TFChangeListener {
 
+    public enum Method {
+        SLICER, MIP, COMPOSITING
+    }
     private Volume volume = null;
     private GradientVolume gradients = null;
     RaycastRendererPanel panel;
     TransferFunction tFunc;
     TransferFunctionEditor tfEditor;
     TransferFunction2DEditor tfEditor2D;
+    Method method;
     
     public RaycastRenderer() {
         panel = new RaycastRendererPanel(this);
         panel.setSpeedLabel("0");
+        method = Method.SLICER;
+    }
+    
+    public void setMethod(Method method){
+        this.method = method;
+        changed();
     }
 
     public void setVolume(Volume vol) {
@@ -218,17 +228,25 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double max = volume.getMaximum();
         TFColor voxelColor = new TFColor();
         
-        // TODO: change code below for MIP
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
-                pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
-                        + volumeCenter[0];
-                pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
-                        + volumeCenter[1];
-                pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
-                        + volumeCenter[2];
+                int val = 0; 
+                
+                // find the maximum value along the viewing ray
+                for (int k = -(volume.getDimZ() / 2); k < (volume.getDimZ() / 2); k++) {   
+                    pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
+                            + volumeCenter[0] + viewVec[0]*k;
+                    pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
+                            + volumeCenter[1] + viewVec[1]*k;
+                    pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
+                            + volumeCenter[2] + viewVec[2]*k;
 
-                double val = getVoxel(pixelCoord, true);
+                    int val2 = getVoxel(pixelCoord, true);
+                    
+                    if (val2 > val) {
+                        val = val2;
+                    }
+                }
                 
                 // Map the intensity to a grey value by linear scaling
                 voxelColor.r = val/max;
@@ -311,8 +329,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     @Override
     public void visualize(GL2 gl) {
-
-
         if (volume == null) {
             return;
         }
@@ -322,7 +338,15 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         gl.glGetDoublev(GL2.GL_MODELVIEW_MATRIX, viewMatrix, 0);
 
         long startTime = System.currentTimeMillis();
-        slicer(viewMatrix);    
+        
+        switch(method) {
+            case SLICER:
+                slicer(viewMatrix);
+                break;
+            case MIP:
+                mip(viewMatrix);
+                break;
+        }
         
         long endTime = System.currentTimeMillis();
         double runningTime = (endTime - startTime);

@@ -46,5 +46,16 @@ public class VectorMath {
         return Math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
     }
     
+    // subtract two vectors
+    public static double[] subtract(double[] v, double[] w) {
+        double[] tmp = new double[3];
+        
+        for (int i = 0; i < 3; i++) {
+            tmp[i] = v[i] - w[i];
+        }
+        
+        return tmp;
+    }
+    
 
 }
