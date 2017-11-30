@@ -171,8 +171,11 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
                         + volumeCenter[2];
 
-                // int val = getVoxel(pixelCoord);
+                int val1 = getVoxel(pixelCoord);
                 double val = triLinearInterpolation(pixelCoord);
+                
+                System.out.println(val1);
+                System.out.println(val);
                 
                 // Map the intensity to a grey value by linear scaling
                 voxelColor.r = val/max;
