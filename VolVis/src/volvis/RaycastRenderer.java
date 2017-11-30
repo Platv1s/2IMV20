@@ -12,7 +12,6 @@ import gui.RaycastRendererPanel;
 import gui.TransferFunction2DEditor;
 import gui.TransferFunctionEditor;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 import util.TFChangeListener;
 import util.VectorMath;
 import volume.GradientVolume;
@@ -224,10 +223,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double[] volumeCenter = new double[3];
         VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
 
-        // sample on a plane through the origin of the volume data
         double max = volume.getMaximum();
         TFColor voxelColor = new TFColor();
         
+        // sample on a plane through all slices of the volume data 
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
                 int val = 0; 
@@ -266,6 +265,64 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 image.setRGB(i, j, pixelColor);
             }
         }    
+    }
+    
+    public void compositing(double[] viewMatrix) {
+        // clear image
+        for (int j = 0; j < image.getHeight(); j++) {
+            for (int i = 0; i < image.getWidth(); i++) {
+                image.setRGB(i, j, 0);
+            }
+        }
+        
+        // vector uVec and vVec define a plane through the origin, 
+        // perpendicular to the view vector viewVec
+        double[] viewVec = new double[3];
+        double[] uVec = new double[3];
+        double[] vVec = new double[3];
+        VectorMath.setVector(viewVec, viewMatrix[2], viewMatrix[6], viewMatrix[10]);
+        VectorMath.setVector(uVec, viewMatrix[0], viewMatrix[4], viewMatrix[8]);
+        VectorMath.setVector(vVec, viewMatrix[1], viewMatrix[5], viewMatrix[9]);
+
+        // image is square
+        int imageCenter = image.getWidth() / 2;
+
+        double[] pixelCoord = new double[3];
+        double[] volumeCenter = new double[3];
+        VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
+
+        TFColor voxelColor;
+        
+        // sample on a plane through all slices of the volume data 
+        for (int j = 0; j < image.getHeight(); j++) {
+            for (int i = 0; i < image.getWidth(); i++) {
+                // Initial color along the viewing ray
+                voxelColor = new TFColor(0, 0, 0, 1);
+                
+                // find the composite value along the viewing ray
+                for (int k = -(volume.getDimZ() / 2); k < (volume.getDimZ() / 2); k++) {   
+                    pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
+                            + volumeCenter[0] + viewVec[0]*k;
+                    pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
+                            + volumeCenter[1] + viewVec[1]*k;
+                    pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
+                            + volumeCenter[2] + viewVec[2]*k;
+
+                    TFColor color = tFunc.getColor(getVoxel(pixelCoord, true));
+                    voxelColor.r = color.r * color.a + voxelColor.r * (1 - color.a);
+                    voxelColor.g = color.g * color.a + voxelColor.g * (1 - color.a);
+                    voxelColor.b = color.b * color.a + voxelColor.b * (1 - color.a);
+                }
+               
+                // BufferedImage expects a pixel color packed as ARGB in an int
+                int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
+                int c_red = voxelColor.r <= 1.0 ? (int) Math.floor(voxelColor.r * 255) : 255;
+                int c_green = voxelColor.g <= 1.0 ? (int) Math.floor(voxelColor.g * 255) : 255;
+                int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
+                int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
+                image.setRGB(i, j, pixelColor);
+            }
+        }     
     }
 
     private void drawBoundingBox(GL2 gl) {
@@ -345,6 +402,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 break;
             case MIP:
                 mip(viewMatrix);
+                break;
+            case COMPOSITING:
+                compositing(viewMatrix);
                 break;
         }
         
