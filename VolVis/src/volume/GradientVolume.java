@@ -49,13 +49,20 @@ public class GradientVolume {
         return dimZ;
     }
 
-    private void compute() {
-
-        // this just initializes all gradients to the vector (0,0,0)
-        for (int i=0; i<data.length; i++) {
-            data[i] = zero;
+    private void compute() {      
+        // Loop over all voxels
+        for (int x = 1; x < volume.getDimX() - 1; x++) {
+            for (int y = 1; y < volume.getDimY() - 1; y++ ) {
+                for (int z = 1; z < volume.getDimZ() - 1; z++) {
+                    // Compute the gradient of the voxel
+                    double xCoord = 0.5 * (volume.getVoxel(x + 1, y, z) - volume.getVoxel(x - 1, y, z));
+                    double yCoord = 0.5 * (volume.getVoxel(x, y + 1, z) - volume.getVoxel(x, y - 1, z));
+                    double zCoord = 0.5 * (volume.getVoxel(x, y, z + 1) - volume.getVoxel(x, y, z - 1));
+            
+                    setGradient(x, y, z, new VoxelGradient((float) xCoord, (float) yCoord, (float) zCoord));
+                }
+            }
         }
-                
     }
     
     public double getMaxGradientMagnitude() {
@@ -64,7 +71,7 @@ public class GradientVolume {
         } else {
             double magnitude = data[0].mag;
             for (int i=0; i<data.length; i++) {
-                magnitude = data[i].mag > magnitude ? data[i].mag : magnitude;
+                    magnitude = data[i].mag > magnitude ? data[i].mag : magnitude;
             }   
             maxmag = magnitude;
             return magnitude;
