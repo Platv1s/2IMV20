@@ -10,12 +10,15 @@ import com.jogamp.opengl.util.texture.Texture;
 import com.jogamp.opengl.util.texture.awt.AWTTextureIO;
 import gui.RaycastRendererPanel;
 import gui.TransferFunction2DEditor;
+import gui.TransferFunction2DEditor.TriangleWidget;
 import gui.TransferFunctionEditor;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import util.TFChangeListener;
 import util.VectorMath;
 import volume.GradientVolume;
 import volume.Volume;
+import volume.VoxelGradient;
 
 /**
  *
@@ -24,7 +27,7 @@ import volume.Volume;
 public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     public enum Method {
-        SLICER, MIP, COMPOSITING
+        SLICER, MIP, COMPOSITING, TRANSFER;
     }
     private Volume volume = null;
     private GradientVolume gradients = null;
@@ -380,9 +383,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         // sample on a plane through all slices of the volume data 
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
-                int val = 0; 
+                // Initial color along the viewing ray
+                voxelColor = new TFColor(0, 0, 0, 1);
                 
-                // find the maximum value along the viewing ray
+                // find the composite value along the viewing ray
                 for (int k = -(volume.getDimZ() / 2); k < (volume.getDimZ() / 2); k = k + precision) {   
                     pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
                             + volumeCenter[0] + viewVec[0]*k;
@@ -391,20 +395,36 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
                             + volumeCenter[2] + viewVec[2]*k;
 
-                    int val2 = getVoxel(pixelCoord, true);
+                    int val = getVoxel(pixelCoord, true);
                     
-                    if (val2 > val) {
-                        val = val2;
+                    if (val == 0) {
+                        continue;
                     }
+                    
+                    TFColor color = tFunc.getColor(getVoxel(pixelCoord, true));
+                    
+                    TransferFunction2DEditor.TriangleWidget tw = getTF2DPanel().triangleWidget;
+                    short baseIntensity = tw.baseIntensity;
+                    double radius = tw.radius;
+                    TFColor setColor = tw.color;
+                     
+                    VoxelGradient gradient = gradients.getGradient((int) pixelCoord[0], (int) pixelCoord[1], (int) pixelCoord[2]);        
+                   
+                    // gradient-based opacity weighting
+                    if (val == baseIntensity && gradient.mag == 0){
+                        color.a = setColor.a;
+                    } else if (gradient.mag > 0 &&
+                            val - (radius * gradient.mag) <= baseIntensity && 
+                            baseIntensity <= val + (radius * gradient.mag)) {
+                        color.a = setColor.a * (1 - (1 / radius) * Math.abs((baseIntensity - val) / gradient.mag));
+                    } else {
+                        color.a = 0;
+                    }
+                    
+                    voxelColor.r = (color.r * color.a) + (voxelColor.r * (1 - color.a));
+                    voxelColor.g = (color.g * color.a) + (voxelColor.g * (1 - color.a));
+                    voxelColor.b = (color.b * color.a) + (voxelColor.b * (1 - color.a));
                 }
-                
-                // Map the intensity to a grey value by linear scaling
-                voxelColor.r = val/max;
-                voxelColor.g = voxelColor.r;
-                voxelColor.b = voxelColor.r;
-                voxelColor.a = val > 0 ? 1.0 : 0.0;  // this makes intensity 0 completely transparent and the rest opaque
-                // Alternatively, apply the transfer function to obtain a color
-                // voxelColor = tFunc.getColor(val);
                 
                
                 // BufferedImage expects a pixel color packed as ARGB in an int
@@ -501,6 +521,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 break;
             case COMPOSITING:
                 compositing(viewMatrix, moreResponsive);
+                break;
+            case TRANSFER:
+                transfer(viewMatrix, moreResponsive);
                 break;
         }
         
