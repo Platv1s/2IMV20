@@ -49,7 +49,12 @@ public class GradientVolume {
         return dimZ;
     }
 
-    private void compute() {      
+    
+    private void compute() {    
+        for (int i = 0; i < data.length; i++) {
+            data[i] = zero;
+        }
+        
         // Loop over all voxels
         for (int x = 1; x < volume.getDimX() - 1; x++) {
             for (int y = 1; y < volume.getDimY() - 1; y++ ) {
@@ -65,6 +70,7 @@ public class GradientVolume {
         }
     }
     
+
     public double getMaxGradientMagnitude() {
         if (maxmag >= 0) {
             return maxmag;

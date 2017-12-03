@@ -490,7 +490,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         long startTime = System.currentTimeMillis();
         
-        boolean moreResponsive = false;
+        boolean moreResponsive = true;
         
         switch(method) {
             case SLICER:
