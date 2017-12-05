@@ -209,7 +209,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     }
 
-    void mip(double[] viewMatrix, boolean moreResponsive) {
+    void mip(double[] viewMatrix) {
         // clear image
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
@@ -238,7 +238,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         int precision;
         
-        if (moreResponsive) {
+        if (interactiveMode) {
             precision = 20;
         } else {
             precision = 1;
@@ -293,7 +293,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         }    
     }
     
-    public void compositing(double[] viewMatrix, boolean moreResponsive) {
+    public void compositing(double[] viewMatrix) {
         // clear image
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
@@ -321,7 +321,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         int precision;
         
-        if (moreResponsive) {
+        if (interactiveMode) {
             precision = 20;
         } else {
             precision = 1;
@@ -414,7 +414,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     }
 
     
-    void transfer(double[] viewMatrix, boolean moreResponsive) {
+    void transfer(double[] viewMatrix) {
         // clear image
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
@@ -443,7 +443,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         int precision;
         
-        if (moreResponsive) {
+        if (interactiveMode) {
             precision = 20;
         } else {
             precision = 1;
@@ -595,21 +595,19 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         gl.glGetDoublev(GL2.GL_MODELVIEW_MATRIX, viewMatrix, 0);
 
         long startTime = System.currentTimeMillis();
-        
-        boolean moreResponsive = true;
-        
+       
         switch(method) {
             case SLICER:
                 slicer(viewMatrix);
                 break;
             case MIP:
-                mip(viewMatrix, moreResponsive);
+                mip(viewMatrix);
                 break;
             case COMPOSITING:
-                compositing(viewMatrix, moreResponsive);
+                compositing(viewMatrix);
                 break;
             case TRANSFER:
-                transfer(viewMatrix, moreResponsive);
+                transfer(viewMatrix);
                 break;
         }
         
