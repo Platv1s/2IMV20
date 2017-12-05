@@ -57,5 +57,16 @@ public class VectorMath {
         return tmp;
     }
     
+    // subtract two vectors
+    public static double[] add(double[] v, double[] w) {
+        double[] tmp = new double[3];
+        
+        for (int i = 0; i < 3; i++) {
+            tmp[i] = v[i] + w[i];
+        }
+        
+        return tmp;
+    }
+    
 
 }

@@ -15,6 +15,7 @@ import gui.TransferFunctionEditor;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import util.TFChangeListener;
+import util.TrackballInteractor;
 import util.VectorMath;
 import volume.GradientVolume;
 import volume.Volume;
@@ -36,6 +37,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     TransferFunctionEditor tfEditor;
     TransferFunction2DEditor tfEditor2D;
     Method method;
+    boolean shading;
     
     public RaycastRenderer() {
         panel = new RaycastRendererPanel(this);
@@ -45,6 +47,11 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     
     public void setMethod(Method method){
         this.method = method;
+        changed();
+    }
+    
+    public void applyShading(boolean set) {
+        shading = set;
         changed();
     }
 
@@ -348,6 +355,52 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     voxelColor.g = (color.g * color.a) + (voxelColor.g * (1 - color.a));
                     voxelColor.b = (color.b * color.a) + (voxelColor.b * (1 - color.a));
                 }
+                
+                // Shading -- with L = V
+                if (shading) {
+                    /*
+                    // Define parameters
+                    double kAmbient = 0.1;
+                    double kDiff = 0.7;
+                    double kSpec = 0.2;
+                    double alpha = 10;
+                    
+                    // Compute V
+                    double[] v = new double[3];
+                    for (int m = 0; m < 3; m++) {
+                        v[m] = viewVec[m] / VectorMath.length(viewVec);
+                    }
+                    
+                    // Compute N
+                    GradientVolume gvol = new GradientVolume(volume);
+                    VoxelGradient vg = gvol.getGradient(i, j, 0);
+                    
+                    double[] n = new double[3];
+                    n[0] = vg.x / vg.mag; 
+                    n[1] = vg.y / vg.mag; 
+                    n[2] = vg.z / vg.mag; 
+                    
+                    // Compute L
+                    double[] l = v;
+                    
+                    // Dot product L and N
+                    double dotLN = VectorMath.dotproduct(l, n);
+                    
+                    // Compute R
+                    double[] r = new double[3];
+                    
+                    for (int m = 0; m < 3; m++) {
+                        r[m] = (2 * dotLN * n[m]) - viewVec[m];
+                    }
+                    
+                    double dotVR = VectorMath.dotproduct(viewVec, r);
+                    
+                    // Apply illumination
+                    voxelColor.r = (voxelColor.r * kAmbient) + (voxelColor.r * kDiff * dotLN) + (voxelColor.r * kSpec * Math.pow(dotVR, alpha));
+                    voxelColor.g = (voxelColor.g * kAmbient) + (voxelColor.g * kDiff * dotLN) + (voxelColor.g * kSpec * Math.pow(dotVR, alpha));
+                    voxelColor.b = (voxelColor.b * kAmbient) + (voxelColor.b * kDiff * dotLN) + (voxelColor.b * kSpec * Math.pow(dotVR, alpha));
+                    */
+                }
                
                 // BufferedImage expects a pixel color packed as ARGB in an int
                 int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
@@ -543,7 +596,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         long startTime = System.currentTimeMillis();
         
-        boolean moreResponsive = false;
+        boolean moreResponsive = true;
         
         switch(method) {
             case SLICER:

@@ -5,7 +5,9 @@
 package gui;
 
 import javax.swing.JOptionPane;
+import util.TrackballInteractor;
 import volvis.RaycastRenderer;
+import volvis.Visualization;
 
 /**
  *
@@ -28,7 +30,6 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
     public void setSpeedLabel(String text) {
         renderingSpeedLabel.setText(text);
     }
-    
     
     /**
      * This method is called from within the constructor to initialize the form.
@@ -149,7 +150,11 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
     }//GEN-LAST:event_tf2dButtonActionPerformed
 
     private void shadingCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_shadingCheckboxActionPerformed
-        JOptionPane.showMessageDialog(this, "Not implemented.");
+        if (shadingCheckbox.isSelected()) {
+            renderer.applyShading(true);
+        } else {
+            renderer.applyShading(false);
+        }
     }//GEN-LAST:event_shadingCheckboxActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
