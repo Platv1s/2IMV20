@@ -75,7 +75,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         tFunc = new TransferFunction(volume.getMinimum(), volume.getMaximum());
         
         // uncomment this to initialize the TF with good starting values for the orange dataset 
-        //tFunc.setTestFunc();    
+        // tFunc.setTestFunc();    
         
         tFunc.addTFChangeListener(this);
         tfEditor = new TransferFunctionEditor(tFunc, volume.getHistogram());
@@ -189,12 +189,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 int val = getVoxel(pixelCoord, true);
                 
                 // Map the intensity to a grey value by linear scaling
-                voxelColor.r = val/max;
-                voxelColor.g = voxelColor.r;
-                voxelColor.b = voxelColor.r;
-                voxelColor.a = val > 0 ? 1.0 : 0.0;  // this makes intensity 0 completely transparent and the rest opaque
+                // voxelColor.r = val/max;
+                // voxelColor.g = voxelColor.r;
+                // voxelColor.b = voxelColor.r;
+                // voxelColor.a = val > 0 ? 1.0 : 0.0;  // this makes intensity 0 completely transparent and the rest opaque
                 // Alternatively, apply the transfer function to obtain a color
-                // voxelColor = tFunc.getColor(val);
+                voxelColor = tFunc.getColor(val);
                 
                
                 // BufferedImage expects a pixel color packed as ARGB in an int
@@ -274,12 +274,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 }
                 
                 // Map the intensity to a grey value by linear scaling
-                voxelColor.r = val/max;
-                voxelColor.g = voxelColor.r;
-                voxelColor.b = voxelColor.r;
-                voxelColor.a = val > 0 ? 1.0 : 0.0;  // this makes intensity 0 completely transparent and the rest opaque
+                // voxelColor.r = val/max;
+                // voxelColor.g = voxelColor.r;
+                // voxelColor.b = voxelColor.r;
+                // voxelColor.a = val > 0 ? 1.0 : 0.0;  // this makes intensity 0 completely transparent and the rest opaque
                 // Alternatively, apply the transfer function to obtain a color
-                // voxelColor = tFunc.getColor(val);
+                voxelColor = tFunc.getColor(val);
                 
                
                 // BufferedImage expects a pixel color packed as ARGB in an int
@@ -341,6 +341,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 // Initial color 
                 voxelColor = new TFColor(0, 0, 0, 1);
               
+                TFColor colors[] = new TFColor[diagonal];
+                VoxelGradient grdnts[] = new VoxelGradient[diagonal];
+
                 // find the composite value along the viewing ray
                 for (int k = 0; k < diagonal; k = k + precision) {   
                     pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
@@ -350,12 +353,21 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
                             + volumeCenter[2] + viewVec[2] * (k - (diagonal / 2));
 
+                    int val = getVoxel(pixelCoord, true);
+                    
+                    if (val == 0) {
+                        continue;
+                    }
+                    
                     TFColor color = tFunc.getColor(getVoxel(pixelCoord, true));
                     voxelColor.r = (color.r * color.a) + (voxelColor.r * (1 - color.a));
                     voxelColor.g = (color.g * color.a) + (voxelColor.g * (1 - color.a));
-                    voxelColor.b = (color.b * color.a) + (voxelColor.b * (1 - color.a));                   
+                    voxelColor.b = (color.b * color.a) + (voxelColor.b * (1 - color.a));  
+                    
+                    colors[k] = voxelColor;
+                    grdnts[k] = gradients.getGradient((int) pixelCoord[0], (int) pixelCoord[1], (int) pixelCoord[2]);  
                 }
-        
+                
                 // BufferedImage expects a pixel color packed as ARGB in an int
                 int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
                 int c_red = voxelColor.r <= 1.0 ? (int) Math.floor(voxelColor.r * 255) : 255;
@@ -613,76 +625,4 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             listeners.get(i).changed();
         }
     }
-    
-    /*
-    // Apply shading
-    
-    GradientVolume gvol = new GradientVolume(volume);
-        
-    // All colors along the viewing ray  
-        
-    TFColor colors[] = new TFColor[(int) Math.ceil(diagonal / precision)];
-    VoxelGradient gradients[] = new VoxelGradient[(int) Math.ceil(diagonal / precision)];
-
-    if (shading) {
-        //colors[k] = voxelColor;
-        //gradients[k] =  gvol.getGradient((int) pixelCoord[0], (int) pixelCoord[1], (int) pixelCoord[2]);        
-
-        TFColor colorOut = new TFColor(0, 0, 0, 0);
-
-        for (int k = -(diagonal / 2); k < (diagonal / 2); k = k + precision) {
-            double diffuse = 0;
-            double specular = 0;
-
-            // Define parameters
-            double kAmbient = 0.1;
-            double kDiff = 0.7;
-            double kSpec = 0.2;
-            double alpha = 10;
-
-            TFColor vc = colors[k];
-            TFColor colorIn = colorOut;
-            TFColor white = new TFColor(1, 1, 1, 1);
-
-            VoxelGradient gradient = gradients[k]; 
-    
-            if (gradient.mag > 0) {
-                // Compute N
-                double[] N = new double[3]; 
-                VectorMath.setVector(N, gradient.x / gradient.mag, gradient.y / gradient.mag, gradient.z / gradient.mag);
-
-                // Compute L
-                double[] L = new double[3]; 
-                VectorMath.setVector(L, 1, 0, 0);
-
-                // Compute V
-                double[] V = new double[3];
-                VectorMath.setVector(V, -viewVec[0] / VectorMath.length(viewVec), -viewVec[1] / VectorMath.length(viewVec), -viewVec[2] / VectorMath.length(viewVec));
-
-                // Compute R
-                double tmp = 2 * VectorMath.dotproduct(L, N);
-                double[] R = new double[3];
-                VectorMath.setVector(R, (tmp * N[0]) - L[0], (tmp * N[1]) - L[1], (tmp * N[2]) - L[2]);
-
-                // Dot product L and N
-                double dotLN = VectorMath.dotproduct(L, N);
-
-                // Dot product V and R
-                double dotVR = VectorMath.dotproduct(V, R);
-
-                if (dotLN > 0 && dotVR > 0) {
-                    diffuse = kDiff * dotLN;
-                    specular = kSpec * Math.pow(dotVR, alpha);  
-                }
-            }
-
-            colorOut.r = colorIn.a * colorIn.r + (1.0f - colorIn.a) * ((kAmbient + diffuse) * vc.r + specular * white.r);
-            colorOut.g = colorIn.a * colorIn.g + (1.0f - colorIn.a) * ((kAmbient + diffuse) * vc.g + specular * white.g);
-            colorOut.b = colorIn.a * colorIn.b + (1.0f - colorIn.a) * ((kAmbient + diffuse) * vc.b + specular * white.b);
-            colorOut.a = colorIn.a             + (1.0f - colorIn.a) * alpha;
-        }
-
-        voxelColor = colorOut;
-    }
-     */
 }
